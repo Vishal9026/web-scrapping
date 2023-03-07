@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup as bs
 from urllib.request import urlopen as uReq
 import logging
 logging.basicConfig(filename="scrapper.log" , level=logging.INFO)
-
+import pymongo
+import csv
 app = Flask(__name__)
 
 @app.route("/", methods = ['GET'])
@@ -71,7 +72,32 @@ def index():
                 mydict = {"Product": searchString, "Name": name, "Rating": rating, "CommentHead": commentHead,
                           "Comment": custComment}
                 reviews.append(mydict)
-            logging.info("log my final result {}".format(reviews))
+                writer = csv.DictWriter(fw, fieldnames=headers)
+
+                # Write the headers to the CSV file
+                #writer.writeheader()
+
+                # Write each dictionary from the list to the CSV file
+            # Define the headers for your CSV file
+            headers = ['Product', 'Name', 'Rating', 'CommentHead', 'Comment']
+
+            # Create a new CSV file
+            with open(filename, mode='w', newline='') as file:
+                writer = csv.DictWriter(file, fieldnames=headers)
+
+                # Write the headers to the CSV file
+                writer.writeheader()
+
+                # Write the dictionary to the CSV file
+                for i in range(len(reviews)):
+                    writer.writerow(reviews[i])
+   
+            client = pymongo.MongoClient("mongodb+srv://vishalgond:Vishal9026@cluster0.r8tqomy.mongodb.net/?retryWrites=true&w=majority")
+            db = client['Vishal']
+            review_col = db['review_scrap_data']
+            review_col.insert_many(reviews)
+
+            # logging.info("log my final result {}".format(reviews))
             return render_template('result.html', reviews=reviews[0:(len(reviews)-1)])
         except Exception as e:
             logging.info(e)
